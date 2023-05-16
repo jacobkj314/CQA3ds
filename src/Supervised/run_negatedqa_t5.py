@@ -56,7 +56,7 @@ require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/summ
 logger = logging.getLogger(__name__)
 
 # # # Here we import the changes I made to use Contrastive Estimation:
-from ceUtils import forwardCE, Seq2SeqTrainerCE, BundleCollatorForSeq2Seq
+from ceUtils import Seq2SeqTrainerCE
 
 try:
     nltk.data.find("tokenizers/punkt")
@@ -407,8 +407,8 @@ def main():
     )
     # # # BEGIN MODEL MODIFICATION CODE
     #This replaces model's forward function with the new one which includes CE
-    import types
-    model.forward = types.MethodType(forwardCE, model)
+    '''import types
+    model.forward = types.MethodType(forwardCE, model)''' # # # don't need this anymore, since the extra CE step is now performed within the trainer
     # # # END MODEL MODIFICATION CODE
 
     model.resize_token_embeddings(len(tokenizer))
