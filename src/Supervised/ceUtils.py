@@ -1,3 +1,59 @@
+# # # START MY SETUP CODE
+
+import torch
+
+"""def get_first_token_likelihood(model, input_ids, out_ids, attention_mask_full = None, decode_in_tokens = None):
+  if attention_mask_full is None:
+    attention_mask_full = torch.ones_like(input_ids).to(input_ids.device)
+  attention_mask = attention_mask_full[:, 1:2]
+
+  if decode_in_tokens is None:
+    decode_in_tokens = torch.zeros_like(out_ids)[...,:1] + model.config.decoder_start_token_id
+
+  iterInstances = [j for j in range(out_ids.shape[0])]
+
+  # # # Replacing generate() with forward() -- this should let the backward hooks persist in the output scores
+  '''scores = model.generate(input_ids=input_ids, attention_mask=attention_mask, decoder_input_ids = decode_in_tokens, return_dict_in_generate=True, output_scores=True, max_new_tokens=1)['scores'][0]'''
+  scores = model(input_ids=input_ids, attention_mask=attention_mask, decoder_input_ids=decode_in_tokens)['logits'][:,0,:]
+
+  softmaxedScores = torch.log(torch.softmax(scores,dim=1))#also transform to log-likelihood
+  score = softmaxedScores[iterInstances,out_ids[:,1]] 
+  # # # score.requires_grad = True
+  return score"""
+# # # # # def get_first_token_likelihood_from_logits(model, input_ids, out_ids, attention_mask_full = None, decode_in_tokens = None, logits=None):
+def get_first_token_likelihood_from_logits(out_ids, logits=None):
+    '''
+    This is a MUCH more efficient version of the above, because you don't have to run the forward pass to generate the logits again
+    '''
+    scores = logits # # # [:,0,:] # # # the logits are going to come pre-squeezed
+
+    softmaxedScores = torch.log(torch.softmax(scores,dim=1))#also transform to log-likelihood
+    score = softmaxedScores[range(out_ids.shape[0]),out_ids[:,1]] 
+
+    return score
+
+def ce_loss_fn(lm_logits, labels):
+    ce = []
+    for i in range(labels.shape[0]):#iterate across number of individual samples in bundle
+        ce.append(
+          get_first_token_likelihood_from_logits(
+            labels,
+            lm_logits[:,0,:].roll(i, 0)  # # # pre-squeeze the logits and then roll between instances
+          ) 
+        )
+    z = torch.log( #normalizing denominator
+      sum(torch.exp(term) for term in ce) #add up all the denominators - using regular python sum because they are tensors in a list
+    ) 
+    ceLoss = torch.log( # return to log space
+      torch.sum(#sum across instances
+        torch.exp( #switch from log space to linear space for sum
+          ce[0] - z #divide the correctly lined up pairings by normalizing constant (in log space) - index 0 is lined up correctly
+        )
+      )
+    ) * -1 #Multiply by -1 so that by minimizing loss we maximize the proportion of the distribution is taken up by the correct answer
+    return ceLoss
+
+
 # # # Setup Hyperparameters
 lam = 1 # # # Default value
 try:
@@ -12,7 +68,7 @@ def bundling(batch):
     for i in range(batch_size):
         yield {col:batch[col][i, ...] for col in batch}
 
-# # # # #
+"""# # # # #
 from transformers import DataCollatorForSeq2Seq
 class BundleCollatorForSeq2Seq(DataCollatorForSeq2Seq):
     def __call__(self, features, return_tensors=None):
@@ -61,7 +117,7 @@ class BundleCollatorForSeq2Seq(DataCollatorForSeq2Seq):
             features["decoder_input_ids"] = decoder_input_ids
 
         return features
-# # # # #
+# # # # #"""
 
 
 # # #
@@ -743,9 +799,9 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
 
         if labels is not None:
             if unwrap_model(model)._get_name() in MODEL_FOR_CAUSAL_LM_MAPPING_NAMES.values():
-                loss = self.label_smoother(outputs, labels, shift_labels=True)
+                mle_loss = self.label_smoother(outputs, labels, shift_labels=True)
             else:
-                loss = self.label_smoother(outputs, labels)
+                mle_loss = self.label_smoother(outputs, labels)
         else:
             if isinstance(outputs, dict) and "loss" not in outputs:
                 raise ValueError(
@@ -753,48 +809,17 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
                     f"{','.join(outputs.keys())}. For reference, the inputs it received are {','.join(inputs.keys())}."
                 )
             # We don't use .loss here since the model may return tuples instead of ModelOutput.
-            loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
-            
-        # # # loss# # # this is the vanilla MLE loss
+            mle_loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
 
+
+        ce_loss = ce_loss_fn(outputs['logits'], inputs['labels'])
+            
+        loss = mle_loss + lam * ce_loss
         return (loss, outputs) if return_outputs else loss
 # # # END TRAINER SETUP CODE
 
-# # # START MY SETUP CODE
 
-import torch
-
-def get_first_token_likelihood(model, input_ids, out_ids, attention_mask_full = None, decode_in_tokens = None):
-  if attention_mask_full is None:
-    attention_mask_full = torch.ones_like(input_ids).to(input_ids.device)
-  attention_mask = attention_mask_full[:, 1:2]
-
-  if decode_in_tokens is None:
-    decode_in_tokens = torch.zeros_like(out_ids)[...,:1] + model.config.decoder_start_token_id
-
-  iterInstances = [j for j in range(out_ids.shape[0])]
-
-  # # # Replacing generate() with forward() -- this should let the backward hooks persist in the output scores
-  '''scores = model.generate(input_ids=input_ids, attention_mask=attention_mask, decoder_input_ids = decode_in_tokens, return_dict_in_generate=True, output_scores=True, max_new_tokens=1)['scores'][0]'''
-  scores = model(input_ids=input_ids, attention_mask=attention_mask, decoder_input_ids=decode_in_tokens)['logits'][:,0,:]
-
-  softmaxedScores = torch.log(torch.softmax(scores,dim=1))#also transform to log-likelihood
-  score = softmaxedScores[iterInstances,out_ids[:,1]] 
-  # # # score.requires_grad = True
-  return score
-# # # # # def get_first_token_likelihood_from_logits(model, input_ids, out_ids, attention_mask_full = None, decode_in_tokens = None, logits=None):
-def get_first_token_likelihood_from_logits(out_ids, logits=None):
-    '''
-    This is a MUCH more efficient version of the above, because you don't have to run the forward pass to generate the logits again
-    '''
-    scores = logits # # # [:,0,:] # # # the logits are going to come pre-squeezed
-
-    softmaxedScores = torch.log(torch.softmax(scores,dim=1))#also transform to log-likelihood
-    score = softmaxedScores[range(out_ids.shape[0]),out_ids[:,1]] 
-
-    return score
-
-import copy
+"""import copy
 import math
 import os
 import warnings
@@ -821,7 +846,7 @@ def forwardCE(
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ) -> Union[Tuple[torch.FloatTensor], Seq2SeqLMOutput]:
-        r"""
+        r'''
         labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
             Labels for computing the sequence classification/regression loss. Indices should be in `[-100, 0, ...,
             config.vocab_size - 1]`. All labels set to `-100` are ignored (masked), the loss is only computed for
@@ -845,7 +870,7 @@ def forwardCE(
         >>> outputs = model.generate(input_ids)
         >>> print(tokenizer.decode(outputs[0], skip_special_tokens=True))
         >>> # studies have shown that owning a dog is good for you.
-        ```"""
+        ```'''
         use_cache = use_cache if use_cache is not None else self.config.use_cache
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
@@ -927,7 +952,7 @@ def forwardCE(
 
         loss = None
         if labels is not None:
-            # # # BEGIN MY CODE FOR CE LOSS
+            '''# # # BEGIN MY CODE FOR CE LOSS
             ce = []
             for i in range(labels.shape[0]):#iterate across number of individual samples in bundle
               ce.append(
@@ -946,9 +971,9 @@ def forwardCE(
                     )
                 )
             ) * -1 #Multiply by -1 so that by minimizing loss we maximize the proportion of the distribution is taken up by the correct answer
-            # # # END MY CODE FOR CE LOSS
+            # # # END MY CODE FOR CE LOSS''' # # # I moved this to the trainer.compute_loss
             loss_fct = CrossEntropyLoss(ignore_index=-100)
-            loss = loss_fct(lm_logits.view(-1, lm_logits.size(-1)), labels.view(-1)) + (lam)*ceLoss # # # I added the ceLoss part
+            loss = loss_fct(lm_logits.view(-1, lm_logits.size(-1)), labels.view(-1)) # # # # # + (lam)*ceLoss # # # I added the ceLoss part
             # TODO(thom): Add z_loss https://github.com/tensorflow/mesh/blob/fa19d69eafc9a482aff0b59ddd96b025c0cb207d/mesh_tensorflow/layers.py#L666 # # # (This TODO was already in the original huggingface repo code)
         if not return_dict:
             output = (lm_logits,) + decoder_outputs[1:] + encoder_outputs
@@ -964,7 +989,7 @@ def forwardCE(
             encoder_last_hidden_state=encoder_outputs.last_hidden_state,
             encoder_hidden_states=encoder_outputs.hidden_states,
             encoder_attentions=encoder_outputs.attentions,
-        )
+        )"""
 
 
 
