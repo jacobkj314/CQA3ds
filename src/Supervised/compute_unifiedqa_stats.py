@@ -49,7 +49,7 @@ def compute_accuracy(pred_file, data_file, label_key="label"):
 
     met = [gold_l[label_key].strip().lower() == pred_l.strip().lower() for gold_l, pred_l in
            zip(gold_data, predictions)]
-    accuracy = sum(met) * 1.0 / len(met) * 100
+    accuracy = (sum(met) * 1.0 / len(met) * 100) if len(met) != 0 else 100 # # # avoid division by 0 in testing
     print (accuracy)
     return accuracy
 
@@ -126,7 +126,7 @@ def compute_consistency(pred_file, data_file, label_key="label"):
                 consistency_dict["0-" + str(contrast_edit)]["total"] += 1
 
     for key in consistency_dict:
-        consistency_dict[key]["consistency"] = consistency_dict[key]["correct"] * 100.0 / consistency_dict[key]["total"]
+        consistency_dict[key]["consistency"] = (consistency_dict[key]["correct"] * 100.0 / consistency_dict[key]["total"]) if consistency_dict[key]["total"] != 0 else 100 # # # avoid division by 0 in testing
 
     return consistency_dict["all"]["consistency"], consistency_dict["0-1"]["consistency"], consistency_dict["0-2"][
         "consistency"], consistency_dict["0-3"]["consistency"]
