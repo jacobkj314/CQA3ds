@@ -26,6 +26,6 @@ export TRANSFORMER_CACHE="../../../cache"
 
 #echo setup
 
-bash run_single_unifiedqa.sh unifiedqa-v2-t5-3b-1251000 ../../../out/
-bash eval_single_unifiedqa_model.sh unifiedqa-v2-t5-3b-1251000 ../../../out/
-bash compute_unifiedqa_stats.sh unifiedqa-v2-t5-3b-1251000 ../../../out/
+bash run_single_unifiedqa.sh unifiedqa-v2-t5-3b-1251000 ../../../out/ ; echo COMPLETED RUN_SING
+bash eval_single_unifiedqa_model.sh unifiedqa-v2-t5-3b-1251000 ../../../out/ ; echo COMPLETED EVAL_SING
+bash compute_unifiedqa_stats.sh unifiedqa-v2-t5-3b-1251000 ../../../out/ ; echo COMPLETED COMPUTE_STATS 
