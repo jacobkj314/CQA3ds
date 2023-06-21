@@ -136,7 +136,7 @@ def json2bundles(url):
 				the third bundle will have as answers {no, yes}, leaving behind 				{___, __, __________, ___, __, __, no, ___, __________}
 				and the remaining instance answered "no" will not be bundled
 		'''
-		if '-fa' in argv: #filter-answers
+		if '-fa-old' in argv: #filter-answers
 			filtered_bundles = []
 			for bun in curr_bundles:
 				while not same(bun['answer']): # # # 
@@ -156,12 +156,50 @@ def json2bundles(url):
 					bun = {"input":next_bun_in, "answer":next_bun_ans}# # #
 					filtered_bundles.append({"input":filt_in, "answer":filt_ans})
 			curr_bundles = filtered_bundles
+		elif '-fa' in argv: #filter-answers
+			filtered_bundles = []
+			for bun in curr_bundles:
+				bun_in = bun['input']; bun_ans = bun['answer']
+				ansset = {a for a in bun['answer']}
+				queAns = list(zip(bun_in, bun_ans)); shuffle(queAns)
+				lists = [[(que, ans) for que, ans in queAns if a == ans] for a in ansset]
+
+				from itertools import product
+				tupleBundles = list(product(*lists))
+
+				for tb in tupleBundles:
+					tb = list(tb)
+					shuffle(tb)
+					tbInput, tbAnswer = zip(*tb)
+					filtered_bundles.append({"input":list(tbInput), "answer":list(tbAnswer)})
+
+
+				'''
+				while not same(bun['answer']): # # # 
+					next_bun_in = []; next_bun_ans = [] # # #
+					bun_in = bun['input']; bun_ans = bun['answer']
+					filt_in = []; filt_ans = []
+					ansset = set()
+					queAns = list(zip(bun_in, bun_ans)); shuffle(queAns) # # #
+					for que, ans in queAns:
+						if ans not in ansset:
+							ansset.add(ans)
+							filt_in.append(que)
+							filt_ans.append(ans)
+						else: # # #
+							next_bun_in.append(que) # # #
+							next_bun_ans.append(ans) # # #
+					bun = {"input":next_bun_in, "answer":next_bun_ans}# # #
+					filtered_bundles.append({"input":filt_in, "answer":filt_ans})
+				'''
+			curr_bundles = filtered_bundles
 		
-		if '-mqfa3' in argv:# PART II of this option - to make the bundles smaller to fit in memory
+		# # # REMOVING THE MEMORY LIMIT - I THINK THIS WAS JUST AN ISSUE BC I WAS INNEFICIENT
+		'''if '-mqfa3' in argv:# PART II of this option - to make the bundles smaller to fit in memory
 			sized_bundles = []
 			for bun in curr_bundles:
 				sized_bundles.append({"input":bun['input'][:6], "answer":bun['answer'][:6]})
-			curr_bundles = sized_bundles
+			curr_bundles = sized_bundles'''
 			
 		bundles.extend(curr_bundles)
 
