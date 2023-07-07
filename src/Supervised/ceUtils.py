@@ -9,35 +9,24 @@ except:
 # # # Setup CEloss
 import torch
 def get_first_token_likelihood_from_logits(out_ids, logits=None):
-    '''
-    This is a MUCH more efficient version of the above, because you don't have to run the forward pass to generate the logits again
-    '''
-    scores = logits # # # [:,0,:] # # # the logits are going to come pre-squeezed
-
-    softmaxedScores = torch.log(torch.softmax(scores,dim=1))#also transform to log-likelihood
-    score = softmaxedScores[range(out_ids.shape[0]),out_ids[:,1]] 
-
-    return score
+    softmaxedScores = torch.log(torch.softmax(logits,dim=1)) # softmax and transform to log-likelihood
+    scores = softmaxedScores[range(out_ids.shape[0]),out_ids[:,1]] #get the likelihood for the associated token and position
+    return scores
 
 def ce_loss_fn(lm_logits, labels):
+    squeezed_logits = lm_logits[:,0,:] # squeeze away the token dimension, since we are only looking at the next token (yes/no/don't)
     ce = []
     for i in range(labels.shape[0]):#iterate across number of individual samples in bundle
         ce.append(
           get_first_token_likelihood_from_logits(
             labels,
-            lm_logits[:,0,:].roll(i, 0)  # # # pre-squeeze the logits and then roll between instances
+            squeezed_logits.roll(shifts=i, dims=0)  # # # pre-squeeze the logits and then roll between instances
           ) 
         )
     z = torch.log( #normalizing denominator
       sum(torch.exp(term) for term in ce) #add up all the denominators - using regular python sum because they are tensors in a list
     ) 
-    ceLoss = torch.log( # return to log space
-      torch.sum(#sum across instances
-        torch.exp( #switch from log space to linear space for sum
-          ce[0] - z #divide the correctly lined up pairings by normalizing constant (in log space) - index 0 is lined up correctly
-        )
-      )
-    ) * -1 #Multiply by -1 so that by minimizing loss we maximize the proportion of the distribution is taken up by the correct answer
+    ceLoss = torch.mean(ce[0] - z) * -1 #Multiply by -1 so that by minimizing loss we maximize the proportion of the distribution is taken up by the correct answer
     return ceLoss
 
 

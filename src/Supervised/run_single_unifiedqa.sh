@@ -1,25 +1,26 @@
 export TASK_NAME=negqa
 
-MODEL_NAME=$1 #unifiedqa-v2-t5-base-1251000, unifiedqa-v2-t5-large-1251000, unifiedqa-v2-t5-3b-1251000
+MAKE_NAME=$1 # # # # # I am including this to be able to use allenai, google, "" models, etc.
+MODEL_NAME=$2 #unifiedqa-v2-t5-base-1251000, unifiedqa-v2-t5-large-1251000, unifiedqa-v2-t5-3b-1251000
 TRAIN_FILES=(unifiedqa)
 
 DATA_DIR="../../data/unifiedqa_formatted_data/"
 
 SEEDS=(70) # 69 68 67 66)
 
-mkdir -p $2
+mkdir -p $3
 
 export TEST_FILE=unifiedqa
 
 for SEED in "${SEEDS[@]}"; do
   for SETTING in "${TRAIN_FILES[@]}"; do
 
-      OUTPUT_DIR=$2/${MODEL_NAME}_negation_all_${SEED}_train_${SETTING}_test_${TEST_FILE}
+      OUTPUT_DIR=$3/${MODEL_NAME}_negation_all_${SEED}_train_${SETTING}_test_${TEST_FILE}
       mkdir -p $OUTPUT_DIR
       # # # changed test to dev on line 24
       # # # # # python run_negatedqa_t5.py \
       deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config_2.json \
-        --model_name_or_path allenai/$MODEL_NAME \
+        --model_name_or_path $MAKE_NAME/$MODEL_NAME \
         --train_file ${DATA_DIR}/condaqa_train_unifiedqa.json \
         --validation_file ${DATA_DIR}/condaqa_dev_unifiedqa.json \
         --test_file ${DATA_DIR}/condaqa_dev_unifiedqa.json \

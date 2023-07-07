@@ -46,7 +46,7 @@ from transformers.file_utils import is_offline_mode
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
-# import wandb
+import wandb
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.14.0.dev0")
@@ -320,22 +320,21 @@ def main():
     # Set up wandb logging
 
     # Start a new run, tracking hyperparameters in config
-    # wandb.init(project="negation", entity="lasha1608", config={
-    #     "learning_rate": training_args.learning_rate,
-    #     "epochs": training_args.num_train_epochs,
-    #     "seed": training_args.seed,
-    #     "train_file": data_args.train_file.replace("/", "-"),
-    #     "validation_file": data_args.validation_file.replace("/", "-"),
-    #     "test_file": data_args.test_file.replace("/", "-")
+    wandb.init(project="negation", config={
+        "learning_rate": training_args.learning_rate,
+        "epochs": training_args.num_train_epochs,
+        "seed": training_args.seed,
+        "train_file": data_args.train_file.replace("/", "-"),
+        "validation_file": data_args.validation_file.replace("/", "-"),
+        "test_file": data_args.test_file.replace("/", "-")
+    })
     #
-    # })
-    #
-    # training_args.report_to = "wandb"
+    training_args.report_to = ["wandb"]
     training_args.run_name = model_args.model_name_or_path + "_run_" + data_args.train_file.split("/")[-1].split(".")[
         0] + "_" + data_args.validation_file.split("/")[-1].split(".")[0] + "_" + str(training_args.seed)
 
-    # wandb.run.name = name+"_"+data_args.train_file.split("/")[-1].split(".")[0]+"_"+data_args.validation_file.split("/")[-1].split(".")[0]+"_"+str(training_args.seed)
-    # wandb.run.save()
+    wandb.run.name = wandb.run.name+"_"+data_args.train_file.split("/")[-1].split(".")[0]+"_"+data_args.validation_file.split("/")[-1].split(".")[0]+"_"+str(training_args.seed)
+    wandb.run.save()
 
     # Set seed before initializing model.
     set_seed(training_args.seed)
@@ -392,10 +391,11 @@ def main():
     #     use_auth_token=True if model_args.use_auth_token else None,
     # )
 
-    if not training_args.do_train:
+    '''if not training_args.do_train:
         tokenizer=T5Tokenizer.from_pretrained("allenai/unifiedqa-v2-t5-large-1251000")
     else:
-        tokenizer=T5Tokenizer.from_pretrained(model_args.model_name_or_path)
+        tokenizer=T5Tokenizer.from_pretrained(model_args.model_name_or_path)''' # # # # # I don't see why we don't just always want to use model_args.model_name_or_path
+    tokenizer=T5Tokenizer.from_pretrained(model_args.model_name_or_path)
 
     model = AutoModelForSeq2SeqLM.from_pretrained(
         model_args.model_name_or_path,
@@ -717,7 +717,7 @@ def main():
     else:
         trainer.create_model_card(**kwargs)
 
-    # wandb.finish()
+    wandb.finish()
 
     return results
 
