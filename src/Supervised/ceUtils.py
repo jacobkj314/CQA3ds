@@ -723,6 +723,7 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
 
         # # # 
         ce_loss = ce_loss_fn(outputs['logits'], inputs['labels'])
+        self.log({'mle_loss':mle_loss, 'ce_loss':ce_loss})
         loss = mle_loss + lam * ce_loss
         # # # 
 
