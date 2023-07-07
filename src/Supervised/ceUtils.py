@@ -1,10 +1,5 @@
-# # # Setup Hyperparameters
-lam = 1 # # # Default value
-try:
-    with open('../../../hparams','r') as hparams:
-        exec(hparams.read())
-except:
-    print('No hparams found, using lam=1')
+from hparams import *
+print(f'lam={lam}')
 
 # # # Setup CEloss
 import torch
