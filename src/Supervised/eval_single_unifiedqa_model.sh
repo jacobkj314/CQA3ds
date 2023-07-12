@@ -7,6 +7,14 @@ DATA_DIR="../../data/unifiedqa_formatted_data/"
 
 SEEDS=(70) #(70 69 68 67 66)
 
+if $3 ; then
+  action="deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config_2.json \ "
+  echo "USING DEEPSPEED"
+else
+  action="python run_negatedqa_t5.py \ "
+  echo "NOT using deepspeed"
+fi
+
 export TEST_FILE=unifiedqa
 
 # Evaluate last model
@@ -17,8 +25,9 @@ for SEED in "${SEEDS[@]}"; do
       OUTPUT_DIR=$2/${MODEL_NAME}_negation_all_${SEED}_train_${SETTING}_test_${TEST_FILE}      
       mkdir -p $OUTPUT_DIR #Remove? 
       # # # changed test to dev on line 24
-      # # # # #python run_negatedqa_t5.py \
-      deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config.json \
+      # # # # # python run_negatedqa_t5.py \
+      # # # # # deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config.json \
+      $action \
         --model_name_or_path $OUTPUT_DIR \
         --train_file ${DATA_DIR}/condaqa_train_unifiedqa.json \
         --validation_file ${DATA_DIR}/condaqa_dev_unifiedqa.json \

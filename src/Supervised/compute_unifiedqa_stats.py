@@ -176,10 +176,17 @@ def main(args):
 
     OUTPUT_DIR = best_checkpoint
 
+    # # #
+    from sys import argv
+    if "--use_deepspeed" in argv:
+        action = "deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config.json"
+    else:
+        action = "python run_negatedqa_t5.py"
+    # # # 
+
     # Evaluate on test set
-    # # # changed test to dev on line 185
-    # # # test_command = "python run_negatedqa_t5.py \
-    test_command = "deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config.json \
+    # # # changed test to dev
+    test_command = "{action} \
     --model_name_or_path {OUTPUT_DIR} \
     --train_file {DATA_DIR}condaqa_train_unifiedqa.json \
     --validation_file {DATA_DIR}condaqa_dev_unifiedqa.json \

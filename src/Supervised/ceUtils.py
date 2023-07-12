@@ -536,7 +536,7 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
                     tr_loss_step = self.training_step(model, inputs)
                 '''
                 # # # BEGIN TRAINER MODIFICATIONS
-                tr_losses_step = []
+                '''tr_losses_step = []
                 for bundle in bundling(inputs): #this breaks a 3D minibatch down into 2D bundles
                     if (
                         ((step + 1) % args.gradient_accumulation_steps != 0)
@@ -549,8 +549,20 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
                     else:
                         tr_losses_step.append(self.training_step(model, bundle))
 
-                    tr_loss_step = sum(tr_losses_step)
-                # # # END TRAINER MODIFICATIONS
+                tr_loss_step = sum(tr_losses_step)''' #MOVING THE CHANGES TO compute_loss() to be able to better have larger minibatches
+                # # # END TRAINER MODIFICATIONS\
+                # # # THE ORIGINAL CODE
+                if (
+                    ((step + 1) % args.gradient_accumulation_steps != 0)
+                    and args.local_rank != -1
+                    and args._no_sync_in_gradient_accumulation
+                ):
+                    # Avoid unnecessary DDP synchronization since there will be no backward pass on this example.
+                    with model.no_sync():
+                        tr_loss_step = self.training_step(model, inputs)
+                else:
+                    tr_loss_step = self.training_step(model, inputs)
+                # # # END OF THE ORIGINAL CODE
 
                 if (
                     args.logging_nan_inf_filter
@@ -697,7 +709,8 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
 
         Subclass and override for custom behavior.
         """
-        if self.label_smoother is not None and "labels" in inputs:
+        # # # THE ORIGINAL CODE HERE
+        '''if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
         else:
             labels = None
@@ -719,13 +732,44 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
                     f"{','.join(outputs.keys())}. For reference, the inputs it received are {','.join(inputs.keys())}."
                 )
             # We don't use .loss here since the model may return tuples instead of ModelOutput.
-            mle_loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
+            mle_loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]'''
+        # # # END OF THE ORIGINAL CODE
+        # # # MY NEW CODE
+        mle_losses = []
+        ce_losses = []
 
-        # # # 
-        ce_loss = ce_loss_fn(outputs['logits'], inputs['labels'])
+        for bundle in bundling(inputs):
+            if self.label_smoother is not None and "labels" in bundle:
+                labels = bundle.pop("labels")
+            else:
+                labels = None
+            outputs = model(**bundle)
+            # Save past state if it exists
+            # TODO: this needs to be fixed and made cleaner later.
+            if self.args.past_index >= 0:
+                self._past = outputs[self.args.past_index]
+            if labels is not None:
+                if unwrap_model(model)._get_name() in MODEL_FOR_CAUSAL_LM_MAPPING_NAMES.values():
+                    mle_losses.append(self.label_smoother(outputs, labels, shift_labels=True)) # # # mle_loss = self.label_smoother(outputs, labels, shift_labels=True)
+                else:
+                    mle_losses.append(self.label_smoother(outputs, labels)) # # # mle_loss = self.label_smoother(outputs, labels)
+            else:
+                if isinstance(outputs, dict) and "loss" not in outputs:
+                    raise ValueError(
+                        "The model did not return a loss from the inputs, only the following keys: "
+                        f"{','.join(outputs.keys())}. For reference, the inputs it received are {','.join(bundle.keys())}."
+                    )
+                # We don't use .loss here since the model may return tuples instead of ModelOutput.
+                mle_losses.append(outputs["loss"] if isinstance(outputs, dict) else outputs[0]) # # # mle_loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
+        
+            ce_losses.append(ce_loss_fn(outputs['logits'], inputs['labels']))
+
+        mle_loss = sum(mle_losses) / len(mle_losses)
+        ce_loss = sum(ce_losses) / len(mle_losses)
+
         self.log({'mle_loss':mle_loss, 'ce_loss':ce_loss})
-        loss = mle_loss + lam * ce_loss
-        # # # 
+        loss = mle_loss + lam * ce_loss 
+        # # # END OF MY NEW CODE
 
         return (loss, outputs) if return_outputs else loss
 # # # END TRAINER SETUP CODE
