@@ -552,7 +552,7 @@ def main():
 
     if training_args.do_eval:
         max_target_length = data_args.val_max_target_length
-        if "validation" not in raw_datasets:
+        if "validation" not in bundle_datasets:
             raise ValueError("--do_eval requires a validation dataset")
         eval_dataset = bundle_datasets["validation"]
         if data_args.max_eval_samples is not None:
