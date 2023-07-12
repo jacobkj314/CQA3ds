@@ -767,7 +767,7 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
         mle_loss = sum(mle_losses) / len(mle_losses)
         ce_loss = sum(ce_losses) / len(mle_losses)
 
-        self.log({'mle_loss':mle_loss, 'ce_loss':ce_loss})
+        self.log({'mle_loss':mle_loss.item(), 'ce_loss':ce_loss.item()})
         loss = mle_loss + lam * ce_loss 
         # # # END OF MY NEW CODE
 
