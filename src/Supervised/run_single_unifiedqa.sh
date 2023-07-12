@@ -11,10 +11,10 @@ SEEDS=(70) # 69 68 67 66)
 mkdir -p $3
 
 if $4 ; then
-  action="deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config_2.json \ "
+  action="deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config_2.json "
   echo "USING DEEPSPEED"
 else
-  action="python run_negatedqa_t5.py \ "
+  action="python run_negatedqa_t5.py "
   echo "NOT using deepspeed"
 fi
 
