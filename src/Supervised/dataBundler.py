@@ -214,5 +214,15 @@ def bundle(source, destination):
 		for bundle in bundles:
 			out.write(json.dumps(bundle) + '\n')
 
-bundle("data/condaqa_train.json", "data/unifiedqa_formatted_data/condaqa_train_unifiedqa.json")
+#bundle train and dev set
+bundle("../../data/condaqa_train.json", "../../data/unifiedqa_formatted_data/condaqa_train_unifiedqa.json")
+bundle("../../data/condaqa_dev_source.json", "../../data/unifiedqa_formatted_data/condaqa_dev_unifiedqa.json")
 
+#whether to use dev or test as test for final reported eval
+split = 'test' if "-use_test" in argv else 'dev'
+print(f'Reporting {split} results with this run')
+import os
+os.system(f'''
+cp ../../data/condaqa_{split}_source.json ../../data/condaqa_test.json
+cp ../../data/unifiedqa_formatted_data/condaqa_{split}_unifiedqa_source.json ../../data/unifiedqa_formatted_data/condaqa_test_unifiedqa.json
+''')

@@ -29,6 +29,7 @@ model=flan-t5-xl
 use_deepspeed=false
 #echo setup
 
+python dataBundler.py -fa 
 echo BEGINNING RUN_SING ; bash run_single_unifiedqa.sh $make $model ../../../out/ $use_deepspeed ; echo COMPLETED RUN_SING
 echo BEGINNING EVAL_SING ; bash eval_single_unifiedqa_model.sh $model ../../../out/ $use_deepspeed ; echo COMPLETED EVAL_SING
 echo BEGINNING COMPUTE_STATS ; bash compute_unifiedqa_stats.sh $model ../../../out/ $use_deepspeed ; echo COMPLETED COMPUTE_STATS 
