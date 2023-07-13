@@ -767,7 +767,7 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
         mle_loss = sum(mle_losses) / len(mle_losses)
         ce_loss = sum(ce_losses) / len(mle_losses)
 
-        self.log({'mle_loss':mle_loss.item(), 'ce_loss':ce_loss.item()})
+        self.log({'mle_loss':mle_loss.item(), 'ce_loss':ce_loss.item()}) #There seem to be issues checkpointing if I try to log using objects that have backward hooks in the computation graph which prevent them from calling __deepcopy__()
         loss = mle_loss + lam * ce_loss 
         # # # END OF MY NEW CODE
 
