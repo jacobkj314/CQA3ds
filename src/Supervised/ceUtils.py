@@ -710,7 +710,7 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
         Subclass and override for custom behavior.
         """
         # # # THE ORIGINAL CODE HERE
-        '''if self.label_smoother is not None and "labels" in inputs:
+        if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
         else:
             labels = None
@@ -732,13 +732,15 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
                     f"{','.join(outputs.keys())}. For reference, the inputs it received are {','.join(inputs.keys())}."
                 )
             # We don't use .loss here since the model may return tuples instead of ModelOutput.
-            mle_loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]'''
+            mle_loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
         # # # END OF THE ORIGINAL CODE
         # # # MY NEW CODE
         mle_losses = []
         ce_losses = []
 
         for bundle in bundling(inputs):
+            ce_losses.append(ce_loss_fn(outputs['logits'], bundle['labels']))
+            '''# # # # # 
             if self.label_smoother is not None and "labels" in bundle:
                 labels = bundle.pop("labels")
             else:
@@ -761,10 +763,10 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
                     )
                 # We don't use .loss here since the model may return tuples instead of ModelOutput.
                 mle_losses.append(outputs["loss"] if isinstance(outputs, dict) else outputs[0]) # # # mle_loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
+            '''# # # # # 
         
-            ce_losses.append(ce_loss_fn(outputs['logits'], inputs['labels']))
 
-        mle_loss = sum(mle_losses) / len(mle_losses)
+        # # # # # mle_loss = sum(mle_losses) / len(mle_losses)
         ce_loss = sum(ce_losses) / len(mle_losses)
 
         self.log({'mle_loss':mle_loss.item(), 'ce_loss':ce_loss.item()}) #There seem to be issues checkpointing if I try to log using objects that have backward hooks in the computation graph which prevent them from calling __deepcopy__()
