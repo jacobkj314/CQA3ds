@@ -1,0 +1,22 @@
+2023-07-17 11:29:14,898 INFO    MainThread:38719 [wandb_setup.py:_flush():68] Configure stats pid to 38719
+2023-07-17 11:29:14,898 INFO    MainThread:38719 [wandb_setup.py:_flush():68] Loading settings from /home/jacob/.config/wandb/settings
+2023-07-17 11:29:14,898 INFO    MainThread:38719 [wandb_setup.py:_flush():68] Loading settings from /home/jacob/Desktop/CQA3ds/wandb/settings
+2023-07-17 11:29:14,899 INFO    MainThread:38719 [wandb_setup.py:_flush():68] Loading settings from environment variables: {'_require_service': 'True'}
+2023-07-17 11:29:14,899 INFO    MainThread:38719 [wandb_setup.py:_flush():68] Inferring run settings from compute environment: {'program_relpath': 'src/Supervised/run_negatedqa_t5.py', 'program': '/home/jacob/Desktop/CQA3ds/src/Supervised/run_negatedqa_t5.py'}
+2023-07-17 11:29:14,899 INFO    MainThread:38719 [wandb_setup.py:_flush():68] Applying login settings: {'mode': 'offline'}
+2023-07-17 11:29:14,899 INFO    MainThread:38719 [wandb_init.py:_log_setup():476] Logging user logs to /home/jacob/Desktop/CQA3ds/wandb/offline-run-20230717_112914-tow8yihi/logs/debug.log
+2023-07-17 11:29:14,900 INFO    MainThread:38719 [wandb_init.py:_log_setup():477] Logging internal logs to /home/jacob/Desktop/CQA3ds/wandb/offline-run-20230717_112914-tow8yihi/logs/debug-internal.log
+2023-07-17 11:29:14,900 INFO    MainThread:38719 [wandb_init.py:init():516] calling init triggers
+2023-07-17 11:29:14,900 INFO    MainThread:38719 [wandb_init.py:init():519] wandb.init called with sweep_config: {}
+config: {'learning_rate': 1e-05, 'epochs': 5.0, 'seed': 70, 'train_file': '..-..-data-unifiedqa_formatted_data-condaqa_train_unifiedqa.json', 'validation_file': '..-..-data-unifiedqa_formatted_data-condaqa_dev_unifiedqa.json', 'test_file': '..-..-data-unifiedqa_formatted_data-condaqa_test_unifiedqa.json'}
+2023-07-17 11:29:14,900 INFO    MainThread:38719 [wandb_init.py:init():569] starting backend
+2023-07-17 11:29:14,900 INFO    MainThread:38719 [wandb_init.py:init():573] setting up manager
+2023-07-17 11:29:14,906 INFO    MainThread:38719 [backend.py:_multiprocessing_setup():102] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2023-07-17 11:29:14,915 INFO    MainThread:38719 [wandb_init.py:init():580] backend started and connected
+2023-07-17 11:29:14,927 INFO    MainThread:38719 [wandb_init.py:init():658] updated telemetry
+2023-07-17 11:29:14,964 INFO    MainThread:38719 [wandb_init.py:init():728] starting run threads in backend
+2023-07-17 11:29:15,239 INFO    MainThread:38719 [wandb_run.py:_console_start():1980] atexit reg
+2023-07-17 11:29:15,240 INFO    MainThread:38719 [wandb_run.py:_redirect():1838] redirect: SettingsConsole.WRAP_RAW
+2023-07-17 11:29:15,241 INFO    MainThread:38719 [wandb_run.py:_redirect():1903] Wrapping output streams.
+2023-07-17 11:29:15,241 INFO    MainThread:38719 [wandb_run.py:_redirect():1925] Redirects installed.
+2023-07-17 11:29:15,243 INFO    MainThread:38719 [wandb_init.py:init():765] run started, returning control to user process

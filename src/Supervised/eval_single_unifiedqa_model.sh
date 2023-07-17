@@ -31,11 +31,11 @@ for SEED in "${SEEDS[@]}"; do
         --model_name_or_path $OUTPUT_DIR \
         --train_file ${DATA_DIR}/condaqa_train_unifiedqa.json \
         --validation_file ${DATA_DIR}/condaqa_dev_unifiedqa.json \
-        --test_file ${DATA_DIR}/condaqa_dev_unifiedqa.json \
+        --test_file ${DATA_DIR}/condaqa_test_unifiedqa.json \
         --do_eval \
         --do_predict \
         --predict_with_generate \
-        --per_device_train_batch_size 1 \
+        --per_device_train_batch_size 8 \
         --learning_rate 1e-5 \
         --num_train_epochs 5 \
         --output_dir $OUTPUT_DIR/test_predictions \
@@ -49,7 +49,7 @@ for SEED in "${SEEDS[@]}"; do
         --text_column input \
         --source_prefix "" \
         --max_source_length 512 \
-        --max_target_length 100 \
+        --max_target_length 32 \
         --overwrite_output_dir
       done
 done
@@ -67,15 +67,16 @@ for SEED in "${SEEDS[@]}"; do
       mkdir -p $OUTPUT_DIR/val_predictions
 
       # # # # #python run_negatedqa_t5.py \
-      deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config.json \
+      # # # # #deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config.json \
+      $action
         --model_name_or_path $OUTPUT_DIR \
         --train_file ${DATA_DIR}/condaqa_train_unifiedqa.json \
         --validation_file ${DATA_DIR}/condaqa_dev_unifiedqa.json \
-        --test_file ${DATA_DIR}/condaqa_dev_unifiedqa.json \
+        --test_file ${DATA_DIR}/condaqa_test_unifiedqa.json \
         --do_eval \
         --do_predict \
         --predict_with_generate \
-        --per_device_train_batch_size 1 \
+        --per_device_train_batch_size 8 \
         --learning_rate 1e-5 \
         --num_train_epochs 10 \
         --output_dir $OUTPUT_DIR/val_predictions \
@@ -88,8 +89,8 @@ for SEED in "${SEEDS[@]}"; do
         --summary_column answer \
         --text_column input \
         --source_prefix ""\
-        --max_source_length 1024\
-        --max_target_length 100\
+        --max_source_length 512\
+        --max_target_length 32\
         --overwrite_output_dir > $OUTPUT_DIR/val_predictions/${MODEL_NAME}_results_all_${SEED}_train_${SETTING}_test_${TEST_FILE}_${checkpoint}.txt
       done
 done

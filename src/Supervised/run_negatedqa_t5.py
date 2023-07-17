@@ -56,7 +56,7 @@ require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/summ
 logger = logging.getLogger(__name__)
 
 # # # Here we import the changes I made to use Contrastive Estimation:
-from ceUtils import Seq2SeqTrainerCE
+from ceUtils import Seq2SeqTrainerCE, DataCollatorForSeq2SeqCE
 
 try:
     nltk.data.find("tokenizers/punkt")
@@ -333,7 +333,7 @@ def main():
     training_args.run_name = model_args.model_name_or_path + "_run_" + data_args.train_file.split("/")[-1].split(".")[
         0] + "_" + data_args.validation_file.split("/")[-1].split(".")[0] + "_" + str(training_args.seed)
 
-    wandb.run.name = wandb.run.name+"_"+data_args.train_file.split("/")[-1].split(".")[0]+"_"+data_args.validation_file.split("/")[-1].split(".")[0]+"_"+str(training_args.seed)
+    wandb.run.name = data_args.train_file.split("/")[-1].split(".")[0]+"_"+data_args.validation_file.split("/")[-1].split(".")[0]+"_"+str(training_args.seed)
     wandb.run.save()
 
     # Set seed before initializing model.
@@ -531,6 +531,37 @@ def main():
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
     # # #
+    def preprocess_function_bundles_unbatched(examples): #in principle there's no reason why this couldn't have been a batched version, it's just easier to think about this way .... and I don't expect any speedup for "batching" because its still looping through
+        padding = "max_length"
+
+        # # # # # print(f'{examples}\nexample', file=sys.stderr);input() # # # # #
+
+        inputs = examples[text_column]
+        targets = examples[summary_column]
+        # print(inputs)
+        # print(prefix)
+        # print("---")
+        inputs = [prefix + inp for inp in inputs]
+        model_inputs = tokenizer(inputs, max_length=data_args.max_source_length, padding=padding, truncation=True)
+
+        # Setup the tokenizer for targets
+        with tokenizer.as_target_tokenizer():
+            labels = tokenizer(targets, max_length=max_target_length, padding=padding, truncation=True)
+
+        # If we are padding here, replace all tokenizer.pad_token_id in the labels by -100 when we want to ignore
+        # padding in the loss.
+        if padding == "max_length" and data_args.ignore_pad_token_for_loss:
+            labels["input_ids"] = [
+                [(l if l != tokenizer.pad_token_id else -100) for l in label] for label in labels["input_ids"]
+            ]
+
+        model_inputs["labels"] = labels["input_ids"]
+
+        model_inputs["bundle_size"] = [len(inputs)] # # # THIS IS NEW, I am testing that it should get passed all the way to compute_loss, where I can use it to split up the batch
+
+        # # # # # print(f'{model_inputs}\nmodel_inputs', file=sys.stderr);input() # # # # #
+
+        return model_inputs
 
     if training_args.do_train:
         # # # if "train" not in raw_datasets:
@@ -542,8 +573,8 @@ def main():
             train_dataset = train_dataset.select(range(data_args.max_train_samples))
         with training_args.main_process_first(desc="train dataset map pre-processing"):
             train_dataset = train_dataset.map(
-                preprocess_function_bundles,# # # Added separate preprocess function that only applies to bundled training data
-                batched=True,
+                preprocess_function_bundles_unbatched,# # # Added separate preprocess function that only applies to bundled training data
+                batched=False,
                 num_proc=data_args.preprocessing_num_workers,
                 remove_columns=column_names,
                 load_from_cache_file=not data_args.overwrite_cache,
@@ -560,8 +591,8 @@ def main():
         with training_args.main_process_first(desc="validation dataset map pre-processing"):
             eval_dataset = eval_dataset.map(
                 # # #preprocess_function,
-                preprocess_function_bundles,
-                batched=True,
+                preprocess_function_bundles_unbatched, # # # # #
+                batched=False,# # # # # 
                 num_proc=data_args.preprocessing_num_workers,
                 remove_columns=column_names,
                 load_from_cache_file=not data_args.overwrite_cache,
@@ -577,7 +608,7 @@ def main():
             predict_dataset = predict_dataset.select(range(data_args.max_predict_samples))
         with training_args.main_process_first(desc="prediction dataset map pre-processing"):
             predict_dataset = predict_dataset.map(
-                preprocess_function,
+                preprocess_function_bundles,
                 batched=True,
                 num_proc=data_args.preprocessing_num_workers,
                 remove_columns=column_names,
@@ -587,7 +618,7 @@ def main():
 
     # Data collator
     label_pad_token_id = -100 if data_args.ignore_pad_token_for_loss else tokenizer.pad_token_id
-    data_collator = DataCollatorForSeq2Seq(
+    data_collator = DataCollatorForSeq2SeqCE(
         tokenizer,
         model=model,
         label_pad_token_id=label_pad_token_id,

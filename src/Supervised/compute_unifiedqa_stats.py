@@ -11,7 +11,7 @@ def get_args():
     parser.add_argument("--predictions_dir", type=str, default="./predictions/", help="dir with all the checkpoints")
     parser.add_argument("--model_name", type=str, default="unifiedqa-v2-t5-base-1251000")
     parser.add_argument("--validation_filename", type=str, default="../../data/condaqa_dev.json")
-    parser.add_argument("--test_filename", type=str, default="../../data/condaqa_dev.json") # # # changed test to dev
+    parser.add_argument("--test_filename", type=str, default="../../data/condaqa_test.json") # # # changed test to dev
     parser.add_argument("--seed", type=str, default="70")
     parser.add_argument("--output_dir", type=str, default="./")
     args = parser.parse_args()
@@ -190,11 +190,11 @@ def main(args):
     --model_name_or_path {OUTPUT_DIR} \
     --train_file {DATA_DIR}condaqa_train_unifiedqa.json \
     --validation_file {DATA_DIR}condaqa_dev_unifiedqa.json \
-    --test_file {DATA_DIR}condaqa_dev_unifiedqa.json \
+    --test_file {DATA_DIR}condaqa_test_unifiedqa.json \
     --do_eval \
     --do_predict \
     --predict_with_generate \
-    --per_device_train_batch_size 1 \
+    --per_device_train_batch_size 8 \
     --learning_rate 1e-5 \
     --num_train_epochs 5 \
     --output_dir {OUTPUT_DIR}/test_predictions \
@@ -207,8 +207,8 @@ def main(args):
     --summary_column answer \
     --text_column input \
     --source_prefix ''\
-    --max_source_length 1024\
-    --max_target_length 100\
+    --max_source_length 512\
+    --max_target_length 32\
     --overwrite_output_dir > {OUTPUT_DIR}/test_predictions/{MODEL_NAME}_results_all_{SEED}_train_{SETTING}_test_{TEST_FILE}_{checkpoint}.txt".format(
         OUTPUT_DIR=OUTPUT_DIR, DATA_DIR=DATA_DIR, MODEL_NAME=MODEL_NAME, SEED=SEED, SETTING="unifiedqa",
         TEST_FILE="unifiedqa", checkpoint=best_checkpoint.split("/")[-1])

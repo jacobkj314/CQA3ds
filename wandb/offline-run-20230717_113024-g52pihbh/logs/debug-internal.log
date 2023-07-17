@@ -1,0 +1,26 @@
+2023-07-17 11:30:24,140 INFO    StreamThr :39067 [internal.py:wandb_internal():88] W&B internal server running at pid: 39067, started at: 2023-07-17 11:30:24.138916
+2023-07-17 11:30:24,156 DEBUG   HandlerThread:39067 [handler.py:handle_request():138] handle_request: status
+2023-07-17 11:30:24,156 DEBUG   SenderThread:39067 [sender.py:send_request():317] send_request: status
+2023-07-17 11:30:24,161 INFO    WriterThread:39067 [datastore.py:open_for_write():75] open: /home/jacob/Desktop/CQA3ds/wandb/offline-run-20230717_113024-g52pihbh/run-g52pihbh.wandb
+2023-07-17 11:30:24,180 DEBUG   HandlerThread:39067 [handler.py:handle_request():138] handle_request: run_start
+2023-07-17 11:30:24,183 DEBUG   HandlerThread:39067 [meta.py:__init__():34] meta init
+2023-07-17 11:30:24,183 DEBUG   HandlerThread:39067 [meta.py:__init__():49] meta init done
+2023-07-17 11:30:24,184 DEBUG   HandlerThread:39067 [meta.py:probe():215] probe
+2023-07-17 11:30:24,192 DEBUG   HandlerThread:39067 [meta.py:_setup_git():205] setup git
+2023-07-17 11:30:24,216 DEBUG   HandlerThread:39067 [meta.py:_setup_git():212] setup git done
+2023-07-17 11:30:24,216 DEBUG   HandlerThread:39067 [meta.py:_save_pip():53] save pip
+2023-07-17 11:30:24,224 DEBUG   HandlerThread:39067 [meta.py:_save_pip():67] save pip done
+2023-07-17 11:30:24,224 DEBUG   HandlerThread:39067 [meta.py:_save_conda():74] save conda
+2023-07-17 11:30:24,232 ERROR   HandlerThread:39067 [meta.py:_save_conda():83] Error saving conda packages
+Traceback (most recent call last):
+  File "/home/jacob/miniconda3/envs/38b/lib/python3.8/site-packages/wandb/sdk/internal/meta.py", line 79, in _save_conda
+    subprocess.call(
+  File "/home/jacob/miniconda3/envs/38b/lib/python3.8/subprocess.py", line 340, in call
+    with Popen(*popenargs, **kwargs) as p:
+  File "/home/jacob/miniconda3/envs/38b/lib/python3.8/subprocess.py", line 858, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/home/jacob/miniconda3/envs/38b/lib/python3.8/subprocess.py", line 1704, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'conda'
+2023-07-17 11:30:24,235 DEBUG   HandlerThread:39067 [meta.py:_save_conda():84] save conda done
+2023-07-17 11:30:24,235 DEBUG   HandlerThread:39067 [meta.py:probe():253] probe done
