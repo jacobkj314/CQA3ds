@@ -1,7 +1,7 @@
 import inspect
 import sys
 from hparams import *
-print(f'lam={lam}')
+print(f'lam_mle={lam_mle}\nlam_ce={lam_ce}')
 
 # # # Setup CEloss
 import torch
@@ -82,15 +82,14 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
             # We don't use .loss here since the model may return tuples instead of ModelOutput.
             mle_loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
 
-        ce_losses = []
-        # # # # # for bundle in bundling(inputs):
-            # # # # # ce_losses.append(ce_loss_fn(outputs['logits'], bundle['labels'])) 
-        for bundle_logits, bundle_labels in bundling(outputs['logits'], inputs['labels'], bundle_size):
-            ce_losses.append(ce_loss_fn(bundle_logits, bundle_labels))       
-        ce_loss = sum(ce_losses) / len(ce_losses)
+        if lam_ce != 0: # # # save a bit of computation if we are not using ce (maybe)
+            ce_losses = []
+            for bundle_logits, bundle_labels in bundling(outputs['logits'], inputs['labels'], bundle_size):
+                ce_losses.append(ce_loss_fn(bundle_logits, bundle_labels))       
+        ce_loss = (sum(ce_losses) / len(ce_losses)) if (lam_ce != 0) else (0)
 
         self.log({'mle_loss':mle_loss.item(), 'ce_loss':ce_loss.item()}) #There seem to be issues checkpointing if I try to log using objects that have backward hooks in the computation graph which prevent them from calling __deepcopy__()
-        loss = mle_loss + lam * ce_loss 
+        loss = lam_mle * mle_loss + lam_ce * ce_loss 
         # # # END OF MY NEW CODE
 
         return (loss, outputs) if return_outputs else loss
@@ -141,8 +140,6 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
             inputs.pop('bundle_size')
         # # #
         
-        print(inputs, file=sys.stderr) # # # # #
-
         return super().prediction_step(
             model,
             inputs,
@@ -189,13 +186,41 @@ class DataCollatorForSeq2SeqCE(DataCollatorForSeq2Seq):
             if labels: # # # But if there aren't labels (i.e. at inference), we don't need to pass the labels
                 feature['labels'] = labels
 
-        features = [ # # # This is new - I am having it join several bundles into a single batch
+        '''
+        This is new - I am having it join several bundles into a single batch
+        This is also some of the more cursed python I've ever written, so as an explanation:
+            is_bundled checks whether the input_ids for each instance in the dataset looks like [. . .] or like [[. . .] . . . [. . .]] that is, whether the dataset is bundled
+            if it is_bundled:
+                we use sum() to join together several lists of lists into one big list of lists. This requires passing the extra parameter [] 
+            otherwise:
+                we use list() to join together several         lists into one big list of lists
+        '''
+        features = [ 
             {
-                colname : sum((feature[colname] for feature in features), []) for colname in features[0]
+                colname: 
+                    (   #Which function to use for aggregating
+                        sum 
+                        if (is_bundled := isinstance(features[0]['input_ids'][0], list)) else 
+                        list
+                    )(
+                        *
+                        (   
+                            (
+                                lambda param : #Which parameters to pass to the function
+                                (
+                                    (param, [])
+                                    if is_bundled else
+                                    (param,)
+                                )
+                            )(
+                                (feature[colname] for feature in features)
+                            )
+                        )
+                    ) for colname in features[0]
             }
         ]
 
-        bundle_size = features[0].pop('bundle_size') if 'bundle_size' in features[0].keys() else None# # # bundle_size doesn't need to be passed to tokenizer for tensorizing
+        bundle_size = features[0].pop('bundle_size') if 'bundle_size' in features[0].keys() else None# # # bundle_size doesn't need to be passed to tokenizer for padding/tensorizing
 
         features = self.tokenizer.pad(
             features,

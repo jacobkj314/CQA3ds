@@ -47,7 +47,7 @@ for SEED in "${SEEDS[@]}"; do
         --text_column input \
         --source_prefix "" \
         --max_source_length 512 \
-        --max_target_length 32 \
+        --max_target_length 16 \
         --load_best_model_at_end True\
         --overwrite_output_dir > ${MODEL_NAME}_results_all_${SEED}_train_${SETTING}_test_${TEST_FILE}.txt
   done

@@ -49,7 +49,7 @@ for SEED in "${SEEDS[@]}"; do
         --text_column input \
         --source_prefix "" \
         --max_source_length 512 \
-        --max_target_length 32 \
+        --max_target_length 16 \
         --overwrite_output_dir
       done
 done
@@ -68,7 +68,7 @@ for SEED in "${SEEDS[@]}"; do
 
       # # # # #python run_negatedqa_t5.py \
       # # # # #deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config.json \
-      $action
+      $action \
         --model_name_or_path $OUTPUT_DIR \
         --train_file ${DATA_DIR}/condaqa_train_unifiedqa.json \
         --validation_file ${DATA_DIR}/condaqa_dev_unifiedqa.json \
@@ -90,7 +90,7 @@ for SEED in "${SEEDS[@]}"; do
         --text_column input \
         --source_prefix ""\
         --max_source_length 512\
-        --max_target_length 32\
+        --max_target_length 16\
         --overwrite_output_dir > $OUTPUT_DIR/val_predictions/${MODEL_NAME}_results_all_${SEED}_train_${SETTING}_test_${TEST_FILE}_${checkpoint}.txt
       done
 done

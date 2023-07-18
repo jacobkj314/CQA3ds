@@ -481,8 +481,11 @@ def main():
 
     # # # This was the existing preprocess_function
     def preprocess_function(examples):
+        padding = "max_length" # # # new
+        
         inputs = examples[text_column]
         targets = examples[summary_column]
+        targets = [t.lower() for t in targets] # # # Use lowercase versions of answers. This uses only one token for yes/no
         # print(inputs)
         # print(prefix)
         # print("---")
@@ -492,6 +495,7 @@ def main():
         # Setup the tokenizer for targets
         with tokenizer.as_target_tokenizer():
             labels = tokenizer(targets, max_length=max_target_length, padding=padding, truncation=True)
+            
 
         # If we are padding here, replace all tokenizer.pad_token_id in the labels by -100 when we want to ignore
         # padding in the loss.
@@ -502,35 +506,7 @@ def main():
 
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
-    # # # I also created a separate preprocess_function with bundles for the training set only
-    def preprocess_function_bundles(examples): #with bundles
 
-        padding = True # # # I changed the value of padding
-
-        inputs = examples[text_column]
-        targets = examples[summary_column]
-        # print(inputs)
-        # print(prefix)
-        # print("---")
-        inputs = [[prefix + i for i in inp] for inp in inputs]# # # have to add the prefix to each instance in the bundle
-        model_inputs = [tokenizer(input, max_length=data_args.max_source_length, padding=padding, truncation=True) for input in inputs]
-        model_inputs = {col : [row[col] for row in model_inputs] for col in model_inputs[0]} # # # change from a list to a dictionary
-
-        # Setup the tokenizer for targets
-        with tokenizer.as_target_tokenizer():
-            labels = [tokenizer(target, max_length=max_target_length, padding=padding, truncation=True) for target in targets]
-            labels = {col : [row[col] for row in labels] for col in labels[0]}
-
-        # If we are padding here, replace all tokenizer.pad_token_id in the labels by -100 when we want to ignore
-        # padding in the loss.
-        if padding == "max_length" and data_args.ignore_pad_token_for_loss:
-            labels["input_ids"] = [
-                [[(l if l != tokenizer.pad_token_id else -100) for l in label] for label in instance] for instance in labels["input_ids"] # # # need to have one more nest
-            ]
-
-        model_inputs["labels"] = labels["input_ids"]
-        return model_inputs
-    # # #
     def preprocess_function_bundles_unbatched(examples): #in principle there's no reason why this couldn't have been a batched version, it's just easier to think about this way .... and I don't expect any speedup for "batching" because its still looping through
         padding = "max_length"
 
@@ -538,6 +514,7 @@ def main():
 
         inputs = examples[text_column]
         targets = examples[summary_column]
+        targets = [t.lower() for t in targets] # # # Use lowercase versions of answers. This uses only one token for yes/no
         # print(inputs)
         # print(prefix)
         # print("---")
@@ -608,7 +585,7 @@ def main():
             predict_dataset = predict_dataset.select(range(data_args.max_predict_samples))
         with training_args.main_process_first(desc="prediction dataset map pre-processing"):
             predict_dataset = predict_dataset.map(
-                preprocess_function_bundles,
+                preprocess_function,
                 batched=True,
                 num_proc=data_args.preprocessing_num_workers,
                 remove_columns=column_names,

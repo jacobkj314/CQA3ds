@@ -208,14 +208,14 @@ def main(args):
     --text_column input \
     --source_prefix ''\
     --max_source_length 512\
-    --max_target_length 32\
+    --max_target_length 16\
     --overwrite_output_dir > {OUTPUT_DIR}/test_predictions/{MODEL_NAME}_results_all_{SEED}_train_{SETTING}_test_{TEST_FILE}_{checkpoint}.txt".format(
         OUTPUT_DIR=OUTPUT_DIR, DATA_DIR=DATA_DIR, MODEL_NAME=MODEL_NAME, SEED=SEED, SETTING="unifiedqa",
-        TEST_FILE="unifiedqa", checkpoint=best_checkpoint.split("/")[-1])
+        TEST_FILE="unifiedqa", checkpoint=best_checkpoint.split("/")[-1], action=action)
 
 
     # Run predictions on test
-    print(test_command)
+    print(f'EXECUTING COMMAND: {test_command}')
     os.system(test_command)
 
     # Make directory for results
