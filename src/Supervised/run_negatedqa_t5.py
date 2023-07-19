@@ -394,7 +394,7 @@ def main():
     '''if not training_args.do_train:
         tokenizer=T5Tokenizer.from_pretrained("allenai/unifiedqa-v2-t5-large-1251000")
     else:
-        tokenizer=T5Tokenizer.from_pretrained(model_args.model_name_or_path)''' # # # # # I don't see why we don't just always want to use model_args.model_name_or_path
+        tokenizer=T5Tokenizer.from_pretrained(model_args.model_name_or_path)''' # # # I don't see why we don't just always want to use model_args.model_name_or_path
     tokenizer=T5Tokenizer.from_pretrained(model_args.model_name_or_path)
 
     model = AutoModelForSeq2SeqLM.from_pretrained(
@@ -510,8 +510,6 @@ def main():
     def preprocess_function_bundles_unbatched(examples): #in principle there's no reason why this couldn't have been a batched version, it's just easier to think about this way .... and I don't expect any speedup for "batching" because its still looping through
         padding = "max_length"
 
-        # # # # # print(f'{examples}\nexample', file=sys.stderr);input() # # # # #
-
         inputs = examples[text_column]
         targets = examples[summary_column]
         targets = [t.lower() for t in targets] # # # Use lowercase versions of answers. This uses only one token for yes/no
@@ -535,8 +533,6 @@ def main():
         model_inputs["labels"] = labels["input_ids"]
 
         model_inputs["bundle_size"] = [len(inputs)] # # # THIS IS NEW, I am testing that it should get passed all the way to compute_loss, where I can use it to split up the batch
-
-        # # # # # print(f'{model_inputs}\nmodel_inputs', file=sys.stderr);input() # # # # #
 
         return model_inputs
 
@@ -568,8 +564,8 @@ def main():
         with training_args.main_process_first(desc="validation dataset map pre-processing"):
             eval_dataset = eval_dataset.map(
                 # # #preprocess_function,
-                preprocess_function_bundles_unbatched, # # # # #
-                batched=False,# # # # # 
+                preprocess_function_bundles_unbatched, # # # New 
+                batched=False, # # # New
                 num_proc=data_args.preprocessing_num_workers,
                 remove_columns=column_names,
                 load_from_cache_file=not data_args.overwrite_cache,

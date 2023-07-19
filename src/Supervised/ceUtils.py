@@ -82,13 +82,12 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
             # We don't use .loss here since the model may return tuples instead of ModelOutput.
             mle_loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
 
-        if lam_ce != 0: # # # save a bit of computation if we are not using ce (maybe)
-            ce_losses = []
-            for bundle_logits, bundle_labels in bundling(outputs['logits'], inputs['labels'], bundle_size):
-                ce_losses.append(ce_loss_fn(bundle_logits, bundle_labels))       
-        ce_loss = (sum(ce_losses) / len(ce_losses)) if (lam_ce != 0) else (0)
+        ce_losses = []
+        for bundle_logits, bundle_labels in bundling(outputs['logits'], inputs['labels'], bundle_size):
+            ce_losses.append(ce_loss_fn(bundle_logits, bundle_labels))       
+        ce_loss = sum(ce_losses) / len(ce_losses)
 
-        self.log({'mle_loss':mle_loss.item(), 'ce_loss':ce_loss.item()}) #There seem to be issues checkpointing if I try to log using objects that have backward hooks in the computation graph which prevent them from calling __deepcopy__()
+        self.log({'mle_loss':float(mle_loss), 'ce_loss':float(ce_loss)}) #There seem to be issues checkpointing if I try to log using objects that have backward hooks in the computation graph which prevent them from calling __deepcopy__()
         loss = lam_mle * mle_loss + lam_ce * ce_loss 
         # # # END OF MY NEW CODE
 
@@ -136,7 +135,7 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
         """
 
         # # # We don't care about the bundle_size if we are not trying to backprop
-        if 'bundle_size' in inputs.keys():
+        if self.args.predict_with_generate and 'bundle_size' in inputs.keys():
             inputs.pop('bundle_size')
         # # #
         

@@ -76,7 +76,7 @@ for SEED in "${SEEDS[@]}"; do
         --do_eval \
         --do_predict \
         --predict_with_generate \
-        --per_device_train_batch_size 8 \
+        --per_device_train_batch_size 24 \
         --learning_rate 1e-5 \
         --num_train_epochs 10 \
         --output_dir $OUTPUT_DIR/val_predictions \
