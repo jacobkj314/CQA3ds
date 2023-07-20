@@ -25,8 +25,14 @@ for SEED in "${SEEDS[@]}"; do
 
       OUTPUT_DIR=$3/${MODEL_NAME}_negation_all_${SEED}_train_${SETTING}_test_${TEST_FILE}
       mkdir -p $OUTPUT_DIR
-      # # # # # python run_negatedqa_t5.py \
-      # # # # # deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config_2.json \
+
+      if $5 ; then
+        OUTPUT_DIR=$MAKE_NAME$MODEL_NAME
+        echo "CONTINUING TRAINING ON EXISTING CHECKPOINT AT $OUTPUT_DIR"
+      else
+        echo "TRAINING FROM BASE MODEL ($MAKE_NAME$MODEL_NAME)"
+      fi
+
       $action \
         --model_name_or_path $MAKE_NAME$MODEL_NAME \
         --train_file ${DATA_DIR}/condaqa_train_unifiedqa.json \
@@ -50,7 +56,7 @@ for SEED in "${SEEDS[@]}"; do
         --max_source_length 512 \
         --max_target_length 16 \
         --load_best_model_at_end True\
-        --overwrite_output_dir > ${MODEL_NAME}_results_all_${SEED}_train_${SETTING}_test_${TEST_FILE}.txt
+        --overwrite_output_dir # # # > ${MODEL_NAME}_results_all_${SEED}_train_${SETTING}_test_${TEST_FILE}.txt # # # We don't need this output to a file
   done
 done
 
