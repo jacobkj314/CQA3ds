@@ -162,15 +162,17 @@ def main(args):
     MODEL_NAME = args.model_name#["unifiedqa-v2-t5-base-1251000", "unifiedqa-v2-t5-large-1251000", "unifiedqa-v2-t5-3b-1251000"]
     SEED = args.seed #["70", "69", "68", "67", "66"]
 
-
+    '''
     # Evaluate all dev checkpoints
 
     best_checkpoints=evaluate_checkpoints(MODEL_NAME, SEED, validation_filename, PREDICTIONS_DIR)
-    
     # Pick best model
-
     best_checkpoints[(MODEL_NAME, SEED)].sort(key=lambda x: x[1])
     best_checkpoint = best_checkpoints[(MODEL_NAME, SEED)][-1][0]  # Gets name of best checkpoint
+    '''
+    # # # # # We don't need to put extra work to get the model that's best on devset. run_single_unifiedqa.sh does that for us
+    best_checkpoint = PREDICTIONS_DIR + MODEL_NAME + "_negation_all_" + SEED + "_train_" + "unifiedqa" + "_test_" + "unifiedqa" 
+
 
     os.system("mkdir -p " + best_checkpoint + "/test_predictions")
 
@@ -195,6 +197,7 @@ def main(args):
     --do_predict \
     --predict_with_generate \
     --per_device_train_batch_size 12 \
+    --gradient_accumulation_steps 2 \
     --learning_rate 1e-5 \
     --num_train_epochs 5 \
     --output_dir {OUTPUT_DIR}/test_predictions \
