@@ -28,12 +28,12 @@ for SEED in "${SEEDS[@]}"; do
       # # # # # python run_negatedqa_t5.py \
       # # # # # deepspeed run_negatedqa_t5.py --per_device_eval_batch_size 1 --gradient_accumulation_steps 1 --deepspeed deepspeed_config_2.json \
       $action \
-        --model_name_or_path $MAKE_NAME/$MODEL_NAME \
+        --model_name_or_path $MAKE_NAME$MODEL_NAME \
         --train_file ${DATA_DIR}/condaqa_train_unifiedqa.json \
         --validation_file ${DATA_DIR}/condaqa_dev_unifiedqa.json \
         --test_file ${DATA_DIR}/condaqa_test_unifiedqa.json \
         --do_train \
-        --per_device_train_batch_size 24 \
+        --per_device_train_batch_size 12 \
         --learning_rate 1e-5 \
         --num_train_epochs 5 \
         --output_dir $OUTPUT_DIR \

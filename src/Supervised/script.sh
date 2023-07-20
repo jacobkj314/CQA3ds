@@ -18,7 +18,7 @@ conda activate 38b
 wandb enabled
 export TRANSFORMER_CACHE="../../../cache"
 
-make=allenai
+make=allenai/
 model=unifiedqa-v2-t5-large-1251000
 use_deepspeed=false
 
