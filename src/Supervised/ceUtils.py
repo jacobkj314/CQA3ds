@@ -87,11 +87,13 @@ class Seq2SeqTrainerCE(Seq2SeqTrainer):
             ce_losses.append(ce_loss_fn(bundle_logits, bundle_labels))       
         ce_loss = sum(ce_losses) / len(ce_losses)
 
-        self.log({'mle_loss':float(mle_loss), 'ce_loss':float(ce_loss)}) #There seem to be issues checkpointing if I try to log using objects that have backward hooks in the computation graph which prevent them from calling __deepcopy__()
+        phase = "train" if self.training else "dev"
+        self.log({'{phase}/mle_loss':float(mle_loss), '{phase}/ce_loss':float(ce_loss)}) #There seem to be issues checkpointing if I try to log using objects that have backward hooks in the computation graph which prevent them from calling __deepcopy__()
         loss = lam_mle * mle_loss + lam_ce * ce_loss 
         # # # END OF MY NEW CODE
 
         return (loss, outputs) if return_outputs else loss
+    
     
     def _set_signature_columns_if_needed(self):
         if self._signature_columns is None:
