@@ -210,7 +210,7 @@ def main(args):
     --summary_column answer \
     --text_column input \
     --source_prefix ''\
-    --max_source_length 512\
+    --max_source_length 400\
     --max_target_length 16\
     --overwrite_output_dir > {OUTPUT_DIR}/test_predictions/{MODEL_NAME}_results_all_{SEED}_train_{SETTING}_test_{TEST_FILE}_{checkpoint}.txt".format(
         OUTPUT_DIR=OUTPUT_DIR, DATA_DIR=DATA_DIR, MODEL_NAME=MODEL_NAME, SEED=SEED, SETTING="unifiedqa",
