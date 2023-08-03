@@ -26,19 +26,20 @@ def read_data(filename):
     return data
 
 
-def write_results(filename, accuracy, consistency, pp_c, scope_c, aff_c):
+def write_results(filename, full_accuracy, consistency, pp_c, scope_c, aff_c,
+                                           accuracy,    pp_a, scope_a, aff_a):
     print(filename)
-    print(f"============> Accuracy = {accuracy}")
-    print(f"============> Consistency = {consistency}")
-    print(f"============> Paraphrase-Original Consistency = {pp_c}")
-    print(f"============> Scope-Original Consistency = {scope_c}")
-    print(f"============> Affirmative-Original Consistency = {aff_c}")
+    print(f"============> Accuracy = {full_accuracy}")
+    print(f"============> Bundle Consistency/Accuracy = {consistency} {accuracy}")
+    print(f"============> Paraphrase-Original Consistency/Accuracy = {pp_c} {pp_a}")
+    print(f"============> Scope-Original Consistency/Accuracy = {scope_c} {scope_a}")
+    print(f"============> Affirmative-Original Consistency/Accuracy = {aff_c} {aff_a}")
     f = open(filename, "w")
-    f.write(f"Accuracy = {accuracy}\n")
-    f.write(f"Consistency = {consistency}\n")
-    f.write(f"Paraphrase-Original Consistency = {pp_c}\n")
-    f.write(f"Scope-Original Consistency = {scope_c}\n")
-    f.write(f"Affirmative-Original Consistency = {aff_c}\n")
+    f.write(f"Accuracy = {full_accuracy}\n")
+    f.write(f"Bundle Consistency/Accuracy = {consistency} {accuracy}\n")
+    f.write(f"Paraphrase-Original Consistency/Accuracy = {pp_c} {pp_a}\n")
+    f.write(f"Scope-Original Consistency/Accuracy = {scope_c} {scope_a}\n")
+    f.write(f"Affirmative-Original Consistency/Accuracy = {aff_c} {aff_a}\n")
     f.close()
 
 
@@ -100,8 +101,8 @@ def compute_consistency(pred_file, data_file, label_key="label"):
     gold_data = read_data(data_file)
     predictions = open(pred_file).readlines()
     groups, consistency_subset = get_groups(gold_data)
-
     consistency_dict = {x: {"correct": 0, "total": 0, "consistency": 0} for x in ["all", "0-1", "0-2", "0-3"]}
+    accuracy_dict =    {x: {"correct": 0, "total": 0, "accuracy": 0} for x in ["all", "0-1", "0-2", "0-3"]} # # # 
 
     for passage_id in groups:
         for question in groups[passage_id]:
@@ -114,6 +115,12 @@ def compute_consistency(pred_file, data_file, label_key="label"):
             consistency_dict["all"]["correct"] += compute_group_score(all_predictions, all_gold_answers)
             consistency_dict["all"]["total"] += 1
 
+            # # #
+            assert len(all_gold_answers) == len(all_predictions)
+            accuracy_dict["all"]["correct"] += sum(g.strip().lower() == p.strip().lower() for g,p in zip(all_gold_answers, all_predictions))
+            accuracy_dict["all"]["total"] += len(all_gold_answers)
+            # # #
+
             # Compute consistency for each edit type
             og_passage_key = 0
             for contrast_edit in range(1, 4):
@@ -125,11 +132,18 @@ def compute_consistency(pred_file, data_file, label_key="label"):
                                                                                               all_gold_answers)
                 consistency_dict["0-" + str(contrast_edit)]["total"] += 1
 
+                # # #
+                assert len(all_gold_answers) == len(all_predictions)
+                accuracy_dict["0-" + str(contrast_edit)]["correct"] += sum(g.strip().lower() == p.strip().lower() for g,p in zip(all_gold_answers, all_predictions))
+                accuracy_dict["0-" + str(contrast_edit)]["total"] += len(all_gold_answers)
+                # # #
+
     for key in consistency_dict:
         consistency_dict[key]["consistency"] = (consistency_dict[key]["correct"] * 100.0 / consistency_dict[key]["total"]) if consistency_dict[key]["total"] != 0 else 100 # # # avoid division by 0 in testing
+        accuracy_dict   [key]['accuracy']    = (accuracy_dict[key]["correct"]    * 100.0 / accuracy_dict[key]["total"])    if accuracy_dict[key]["total"]    != 0 else 100
 
-    return consistency_dict["all"]["consistency"], consistency_dict["0-1"]["consistency"], consistency_dict["0-2"][
-        "consistency"], consistency_dict["0-3"]["consistency"]
+    return consistency_dict["all"]["consistency"], consistency_dict["0-1"]["consistency"], consistency_dict["0-1"]["consistency"], consistency_dict["0-3"]["consistency"
+        ], accuracy_dict   ["all"]["accuracy"],    accuracy_dict   ["0-1"]["accuracy"],     accuracy_dict  ["0-2"]["accuracy"]   , accuracy_dict   ["0-3"]["accuracy"]
 
 
 def evaluate_checkpoints(MODEL_NAME, SEED, validation_filename, checkpoint_dir="./predictions/"):
@@ -229,10 +243,12 @@ def main(args):
 
     # Compute results
 
-    accuracy = compute_accuracy(pred_file, test_filename, "label")
-    consistency, pp_c, scope_c, aff_c = compute_consistency(pred_file, test_filename, "label")
+    full_accuracy = compute_accuracy(pred_file, test_filename, "label")
+    (consistency, pp_c, scope_c, aff_c,
+     accuracy,    pp_a, scope_a, aff_a) = compute_consistency(pred_file, test_filename, "label")
 
-    write_results(RESULTS_DIR+MODEL_NAME+"_"+SEED+".txt", accuracy, consistency, pp_c, scope_c, aff_c)
+    write_results(RESULTS_DIR+MODEL_NAME+"_"+SEED+".txt", full_accuracy, consistency, pp_c, scope_c, aff_c,
+                                                                         accuracy,    pp_a, scope_a, aff_a)
 
 
 
